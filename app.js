@@ -7,11 +7,27 @@
   $('#mode').textContent = DEMO ? '🧪 Demo mode (simulated cars)' : '📶 Bluetooth mode';
 
   function notice(html) { const n = $('#notice'); n.innerHTML = html; n.hidden = !html; }
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2200); }
+  const speedWord = v => v <= 0 ? 'Stopped' : v <= 400 ? 'Slow' : v <= 800 ? 'Medium' : 'Fast';
   const hasBT = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
-  if (!DEMO && !hasBT) {
-    notice('⚠️ This browser can’t talk to Bluetooth cars. Safari and iPhone/iPad browsers don’t support Web Bluetooth.<br><b>Open this page in Google Chrome on the Mac.</b> (Or try <a href="?demo=1" style="color:#ffb000">demo mode</a>.)');
-    $('#connect').disabled = true;
+  const demoLink = ' (Or try <a href="?demo=1" style="color:#ffb000">demo mode</a>.)';
+  async function checkBluetooth() {
+    if (DEMO) return true;
+    if (!hasBT) {
+      notice('⚠️ This browser can’t talk to Bluetooth cars (Safari and iPhone/iPad browsers don’t support it).<br><b>Open this page in Google Chrome on the Mac.</b>' + demoLink);
+      $('#connect').disabled = true; return false;
+    }
+    let avail = true;
+    try { if (navigator.bluetooth.getAvailability) avail = await navigator.bluetooth.getAvailability(); } catch (e) {}
+    if (!avail) {
+      notice('⚠️ Bluetooth looks switched off. <b>Turn on Bluetooth</b> in System Settings &gt; Bluetooth, then press Find &amp; Connect again.' + demoLink);
+      return false;
+    }
+    notice(''); return true;
   }
+  checkBluetooth();
+  if (hasBT && navigator.bluetooth.addEventListener) navigator.bluetooth.addEventListener('availabilitychanged', checkBluetooth);
 
   // ---- Web Bluetooth transport ----
   class BleTransport {
@@ -65,19 +81,22 @@
       const el = $('#card-tpl').content.firstElementChild.cloneNode(true); this.el = el;
       const q = s => el.querySelector(s); this.q = q;
       $('#empty').hidden = true; $('#cars').appendChild(el);
-      q('.speed').addEventListener('input', () => { q('.speed-val').textContent = q('.speed').value; this.throttle(); });
-      q('.stop').onclick = () => { q('.speed').value = 0; q('.speed-val').textContent = 0; this.send(E.setSpeed(0, 1500)); };
+      q('.speed').addEventListener('input', () => { q('.speed-val').textContent = speedWord(+q('.speed').value); this.throttle(); });
+      q('.stop').onclick = () => { clearTimeout(this.th); this.zeroSpeed(); this.send(E.setSpeed(0, 1500)); toast('⛔ Stopped'); };
       q('.lane-left').onclick = () => this.lane(-1); q('.lane-right').onclick = () => this.lane(1);
-      q('.uturn').onclick = () => this.send(E.turn(3, 0));
+      q('.uturn').onclick = () => { this.send(E.turn(3, 0)); toast('↩️ U-turn sent to ' + (this.t.name || 'car')); };
       q('.head').onclick = () => { this.head = !this.head; q('.head').classList.toggle('on', this.head);
         this.send(E.setLights(E.lightMask(P.LIGHT.HEAD, this.head))); };
       q('.tail').onclick = () => { this.tail = !this.tail; q('.tail').classList.toggle('on', this.tail);
         this.send(E.setLights(E.lightMask(P.LIGHT.BRAKE, this.tail))); };
-      q('.color').onchange = () => { this.color(q('.color').value); q('.color').value = ''; };
+      q('.color').onchange = () => { const c = q('.color').value; this.color(c);
+        q('.color-state').textContent = 'Colour: ' + c; toast('🎨 Colour: ' + c); };
       q('.disc').onclick = () => this.t.disconnect();
       t.onNotify(b => this.onMsg(b));
       t.onDisconnect = () => this.lost();
     }
+    zeroSpeed() { const q = this.q; this.stoppedAt = Date.now(); q('.speed').value = 0;
+      q('.speed-val').textContent = 'Stopped'; q('.rspeed').textContent = 'Stopped'; q('.mms').textContent = '0'; }
     log(s) { const l = this.q('.log'); l.textContent = (s + '\n' + l.textContent).slice(0, 4000); }
     hex(b) { return Array.from(b, x => x.toString(16).padStart(2, '0')).join(' '); }
     send(b) { this.log('→ ' + this.hex(b)); return this.t.write(b).catch(e => this.log('write failed: ' + e.message)); }
@@ -119,11 +138,13 @@
       switch (m.type) {
         case 'position': this.offset = m.offset; q('.piece').textContent = m.pieceId; q('.loc').textContent = m.locationId;
           q('.offset').textContent = Math.abs(m.offset) > UNKNOWN_OFFSET ? '?' : m.offset.toFixed(1) + ' mm';
-          q('.rspeed').textContent = m.speed; q('.ontrack').textContent = 'yes'; break;
+          if (!(this.stoppedAt && Date.now() - this.stoppedAt < 1500 && +q('.speed').value === 0)) {
+            q('.rspeed').textContent = speedWord(+q('.speed').value === 0 ? 0 : m.speed); q('.mms').textContent = m.speed; }
+          q('.ontrack').textContent = 'yes'; break;
         case 'transition': this.transitions++; q('.trans').textContent = this.transitions;
           if (Math.abs(m.offset) < UNKNOWN_OFFSET) this.offset = m.offset; break;
         case 'offset': this.offset = m.offset; break;
-        case 'battery': q('.battery').textContent = `${P.batteryPct(m.mv)}% (${(m.mv / 1000).toFixed(2)} V)`; break;
+        case 'battery': q('.battery').textContent = `${P.batteryPct(m.mv)}%`; q('.volts').textContent = (m.mv / 1000).toFixed(2) + ' V'; break;
         case 'version': q('.fw').textContent = m.version + ' (0x' + m.version.toString(16) + ')'; break;
         case 'delocalized': q('.ontrack').textContent = '❌ lost track'; q('.piece').textContent = '–'; q('.loc').textContent = '–'; break;
         case 'status': q('.ontrack').textContent = m.onCharger ? '🔌 charger' : (m.onTrack ? 'yes' : 'no'); break;
@@ -134,16 +155,20 @@
       this.el.classList.remove('connected'); this.el.classList.add('lost');
       this.q('.state').textContent = '🔌 disconnected';
       this.el.querySelectorAll('button,input,select').forEach(x => x.disabled = true);
-      const rm = document.createElement('button'); rm.textContent = 'Remove card'; rm.className = 'big';
+      this.q('.speed').value = 0; this.q('.speed-val').textContent = '–';
+      this.el.querySelectorAll('.stats b').forEach(b => b.textContent = '–');
+      this.q('.color-state').textContent = 'Colour: –';
+      const rm = document.createElement('button'); rm.textContent = 'Remove (you can reconnect anytime)'; rm.className = 'big';
       rm.onclick = () => { this.el.remove(); if (!document.querySelector('.card')) $('#empty').hidden = false; };
       this.q('.disc').replaceWith(rm);
     }
   }
 
-  $('#track').onchange = () => cars.forEach(c => c.send(E.setConfig(+$('#track').value)));
+  $('#track').onchange = () => { cars.forEach(c => c.send(E.setConfig(+$('#track').value)));
+    toast('🛣️ Track type: ' + $('#track').selectedOptions[0].textContent + (cars.size ? ' (sent to ' + cars.size + ' car' + (cars.size > 1 ? 's' : '') + ')' : '')); };
 
   $('#connect').onclick = async () => {
-    notice('');
+    if (!(await checkBluetooth())) return;
     let t;
     try {
       if (DEMO) t = new window.MockTransport();

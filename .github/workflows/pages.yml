@@ -1,7 +1,6 @@
-name: Deploy Pages
+name: Deploy Pages (manual)
+# Pages is served from the gh-pages branch. This workflow is manual-only and needs Pages source set to "GitHub Actions" in Settings.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,8 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - run: mkdir _site && cp index.html style.css protocol.js mock.js app.js _site/
       - uses: actions/upload-pages-artifact@v3
         with:

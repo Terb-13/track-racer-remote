@@ -15,6 +15,7 @@
     <span id="mode" class="pill"></span>
   </div>
   <div id="notice" class="notice" hidden></div>
+  <div id="toast" class="toast" hidden></div>
 </header>
 <main id="cars"><p id="empty" class="empty">Turn a car on (take it off the charger), set it on the track, then press <b>Find &amp; Connect a Car</b>. You can connect two cars.</p></main>
 <footer>Unofficial fan-made remote. Not affiliated with, or endorsed by, the toy's original maker or its current owner. Protocol per the Apache-2.0 drive-sdk.</footer>
@@ -22,7 +23,7 @@
   <section class="card">
     <div class="card-head"><h2 class="name">Car</h2><span class="model pill"></span><span class="state pill">connecting…</span></div>
     <div class="row speed-row">
-      <label>Speed <b class="speed-val">0</b> mm/s</label>
+      <label>Speed: <b class="speed-val">Stopped</b></label>
       <input class="speed" type="range" min="0" max="1200" step="50" value="0">
       <button class="big stop">⛔ STOP</button>
     </div>
@@ -34,20 +35,27 @@
     <div class="row">
       <button class="big head">💡 Headlights</button>
       <button class="big tail">🔴 Taillights</button>
-      <select class="color big"><option value="">🎨 Colour…</option><option>red</option><option>green</option><option>blue</option><option>purple</option><option>rainbow</option><option value="off">off</option></select>
+      <select class="color big"><option value="" disabled>🎨 Colour…</option><option>red</option><option>green</option><option>blue</option><option>purple</option><option>rainbow</option><option value="off" selected>off</option></select>
+      <span class="color-state pill">Colour: off</span>
     </div>
-    <div class="stats">
+    <div class="stats main-stats">
       <div><span>Battery</span><b class="battery">–</b></div>
-      <div><span>Piece ID</span><b class="piece">–</b></div>
-      <div><span>Location ID</span><b class="loc">–</b></div>
-      <div><span>Lane offset</span><b class="offset">–</b></div>
-      <div><span>Reported speed</span><b class="rspeed">–</b></div>
-      <div><span>Pieces passed</span><b class="trans">0</b></div>
-      <div><span>Firmware</span><b class="fw">–</b></div>
       <div><span>On track</span><b class="ontrack">–</b></div>
+      <div><span>Speed now</span><b class="rspeed">–</b></div>
+      <div><span>Pieces passed</span><b class="trans">0</b></div>
     </div>
+    <details class="dev"><summary>Details (for grown-ups)</summary>
+      <div class="stats">
+        <div><span>Piece ID</span><b class="piece">–</b></div>
+        <div><span>Location ID</span><b class="loc">–</b></div>
+        <div><span>Lane offset</span><b class="offset">–</b></div>
+        <div><span>Firmware</span><b class="fw">–</b></div>
+        <div><span>Battery volts</span><b class="volts">–</b></div>
+        <div><span>Speed (mm/s)</span><b class="mms">–</b></div>
+      </div>
+      <pre class="log"></pre>
+    </details>
     <div class="row"><button class="disc">Disconnect</button></div>
-    <details><summary>Raw messages</summary><pre class="log"></pre></details>
   </section>
 </template>
 <script src="protocol.js"></script>
