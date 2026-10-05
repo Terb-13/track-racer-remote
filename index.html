@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Track Racer Remote</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<header>
+  <h1>🏁 Track Racer Remote</h1>
+  <div class="bar">
+    <button id="connect" class="big go">➕ Find &amp; Connect a Car</button>
+    <label class="track">Track type:
+      <select id="track"><option value="0">Modular plastic pieces (OverDrive)</option><option value="1">Roll-out vinyl mat (original Drive)</option></select>
+    </label>
+    <span id="mode" class="pill"></span>
+  </div>
+  <div id="notice" class="notice" hidden></div>
+</header>
+<main id="cars"><p id="empty" class="empty">Turn a car on (take it off the charger), set it on the track, then press <b>Find &amp; Connect a Car</b>. You can connect two cars.</p></main>
+<footer>Unofficial fan-made remote. Not affiliated with, or endorsed by, the toy's original maker or its current owner. Protocol per the Apache-2.0 drive-sdk.</footer>
+<template id="card-tpl">
+  <section class="card">
+    <div class="card-head"><h2 class="name">Car</h2><span class="model pill"></span><span class="state pill">connecting…</span></div>
+    <div class="row speed-row">
+      <label>Speed <b class="speed-val">0</b> mm/s</label>
+      <input class="speed" type="range" min="0" max="1200" step="50" value="0">
+      <button class="big stop">⛔ STOP</button>
+    </div>
+    <div class="row">
+      <button class="big lane-left">⬅️ Lane Left</button>
+      <button class="big lane-right">Lane Right ➡️</button>
+      <button class="big uturn">↩️ U-Turn</button>
+    </div>
+    <div class="row">
+      <button class="big head">💡 Headlights</button>
+      <button class="big tail">🔴 Taillights</button>
+      <select class="color big"><option value="">🎨 Colour…</option><option>red</option><option>green</option><option>blue</option><option>purple</option><option>rainbow</option><option value="off">off</option></select>
+    </div>
+    <div class="stats">
+      <div><span>Battery</span><b class="battery">–</b></div>
+      <div><span>Piece ID</span><b class="piece">–</b></div>
+      <div><span>Location ID</span><b class="loc">–</b></div>
+      <div><span>Lane offset</span><b class="offset">–</b></div>
+      <div><span>Reported speed</span><b class="rspeed">–</b></div>
+      <div><span>Pieces passed</span><b class="trans">0</b></div>
+      <div><span>Firmware</span><b class="fw">–</b></div>
+      <div><span>On track</span><b class="ontrack">–</b></div>
+    </div>
+    <div class="row"><button class="disc">Disconnect</button></div>
+    <details><summary>Raw messages</summary><pre class="log"></pre></details>
+  </section>
+</template>
+<script src="protocol.js"></script>
+<script src="mock.js"></script>
+<script src="app.js"></script>
+</body></html>
