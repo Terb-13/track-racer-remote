@@ -15,7 +15,7 @@
   async function checkBluetooth() {
     if (DEMO) return true;
     if (!hasBT) {
-      notice('⚠️ This browser can’t talk to Bluetooth cars (Safari and iPhone/iPad browsers don’t support it).<br><b>Open this page in Google Chrome on the Mac.</b>' + demoLink);
+      notice('⚠️ This browser can’t use Bluetooth here. Use Chrome on a Mac or PC, or try <a href="?demo=1" style="color:#ffb000">demo mode</a>.');
       $('#connect').disabled = true; return false;
     }
     let avail = true;
@@ -83,7 +83,8 @@
       $('#empty').hidden = true; $('#cars').appendChild(el);
       q('.speed').addEventListener('input', () => { q('.speed-val').textContent = speedWord(+q('.speed').value); this.throttle(); });
       q('.stop').onclick = () => { clearTimeout(this.th); this.zeroSpeed(); this.send(E.setSpeed(0, 1500)); toast('⛔ Stopped'); };
-      q('.lane-left').onclick = () => this.lane(-1); q('.lane-right').onclick = () => this.lane(1);
+      q('.lane-left').onclick = () => { this.lane(-1); toast('⬅️ Lane left: ' + (this.t.name || 'car')); };
+      q('.lane-right').onclick = () => { this.lane(1); toast('➡️ Lane right: ' + (this.t.name || 'car')); };
       q('.uturn').onclick = () => { this.send(E.turn(3, 0)); toast('↩️ U-turn sent to ' + (this.t.name || 'car')); };
       q('.head').onclick = () => { this.head = !this.head; q('.head').classList.toggle('on', this.head);
         this.send(E.setLights(E.lightMask(P.LIGHT.HEAD, this.head))); };
@@ -158,6 +159,7 @@
       this.q('.speed').value = 0; this.q('.speed-val').textContent = '–';
       this.el.querySelectorAll('.stats b').forEach(b => b.textContent = '–');
       this.q('.color-state').textContent = 'Colour: –';
+      this.q('.color').value = '';
       const rm = document.createElement('button'); rm.textContent = 'Remove (you can reconnect anytime)'; rm.className = 'big';
       rm.onclick = () => { this.el.remove(); if (!document.querySelector('.card')) $('#empty').hidden = false; };
       this.q('.disc').replaceWith(rm);
